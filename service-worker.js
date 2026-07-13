@@ -1,6 +1,6 @@
 // Bump this version string whenever you push updated app files.
 // Otherwise phones that already installed the app keep serving the old cached copy.
-const CACHE = 'idle-empire-v13';
+const CACHE = 'idle-empire-v14';
 const ASSETS = ['./idle-empire.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-192-maskable.png', './icon-512-maskable.png'];
 
 self.addEventListener('install', e => {
