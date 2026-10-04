@@ -557,6 +557,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
           </div>
         </div>
       </div></div>
+      <div class="set-sec"><div class="set-ttl">Install</div><div class="set-grp"><div class="set-row stack"><div class="set-row-top"><span class="set-lbl">Add to app list</span><span class="set-val" id="install-status"></span></div><div style="display:flex;gap:8px"><button class="mb-ok" style="flex:1" onclick="installApp()">Install app</button><button class="mb-cancel" style="flex:1" onclick="checkInstall()">Check</button></div></div></div></div>
       <div class="set-sec"><div class="set-ttl">Account</div><div class="set-grp"><div class="set-row" onclick="backupData()"><span class="set-lbl">Backup Data</span></div><div class="set-row" onclick="restoreData()"><span class="set-lbl">Restore Data</span></div><div class="set-row danger" onclick="confirmDeleteAccount()"><span class="set-lbl">Delete Account</span></div></div></div>
       <div class="set-sec"><div class="set-ttl">App Info</div><div class="set-grp"><div class="set-row" style="cursor:default"><span class="set-lbl">Version</span><span class="set-val">v0.2.0</span></div><div class="set-row" style="cursor:default"><span class="set-lbl">Stage</span><span class="set-val">Personal Core</span></div></div></div>
       <div style="height:16px"></div>
@@ -854,7 +855,7 @@ window.addEventListener('popstate',()=>{if(writerOpen()){closeWriter();return;}i
 
 function toggleHbg(){hbgOpen=!hbgOpen;document.getElementById('hbg-overlay').classList.toggle('on',hbgOpen);document.getElementById('hbg-panel').classList.toggle('on',hbgOpen);if(hbgOpen){updateProfilePanel();loadNotifPref();}else if(activePanelPage)closePanelPage();}
 function closeHbg(){if(hbgOpen)toggleHbg();}
-function openPanelPage(id){const page=document.getElementById(id);if(!page)return;activePanelPage=id;document.getElementById('panel-main').classList.add('off');page.classList.remove('off');if(id==='panel-profile')updateProfilePanel();if(id==='panel-settings'){const t=localStorage.getItem('ie_theme')||'dark';['dark','light','system'].forEach(x=>{const b=document.getElementById('t-'+x);if(b)b.classList.toggle('on',x===t)});loadNotifPref();const gk=localStorage.getItem('ie_gemini_key')||'';document.getElementById('gemini-key-inp').value=gk;document.getElementById('gemini-status').textContent=gk?'Saved':'Not connected';}}
+function openPanelPage(id){if(id==='panel-settings')refreshGeminiStatus();const page=document.getElementById(id);if(!page)return;activePanelPage=id;document.getElementById('panel-main').classList.add('off');page.classList.remove('off');if(id==='panel-profile')updateProfilePanel();if(id==='panel-settings'){const t=localStorage.getItem('ie_theme')||'dark';['dark','light','system'].forEach(x=>{const b=document.getElementById('t-'+x);if(b)b.classList.toggle('on',x===t)});loadNotifPref();const gk=localStorage.getItem('ie_gemini_key')||'';document.getElementById('gemini-key-inp').value=gk;document.getElementById('gemini-status').textContent=gk?'Saved':'Not connected';}}
 function closePanelPage(){if(!activePanelPage)return;document.getElementById(activePanelPage)?.classList.add('off');document.getElementById('panel-main').classList.remove('off');activePanelPage=null;}
 function openProfilePanel(){if(!hbgOpen)toggleHbg();setTimeout(()=>openPanelPage('panel-profile'),50);}
 function updateProfilePanel(){
@@ -1323,38 +1324,81 @@ function showAiLoading(on){document.getElementById('ai-loading').classList.toggl
 function saveGeminiKey(){
   const key=document.getElementById('gemini-key-inp').value.trim();
   if(!key){toast('Enter a key first');return;}
+  if(localStorage.getItem('ie_gemini_key')!==key)localStorage.removeItem('ie_gemini_ok');
   localStorage.setItem('ie_gemini_key',key);
-  document.getElementById('gemini-status').textContent='Saved';
+  refreshGeminiStatus();
   toast('Gemini key saved');
 }
 // Google's exact free Flash model id keeps shifting/deprecating (2.5-flash started 404ing ahead of
 // its own official shutdown date). Try a short fallback chain instead of hard-coding one id.
 const GEMINI_MODELS=['gemini-flash-latest','gemini-2.5-flash','gemini-3-flash-preview'];
-async function geminiRequest(key,body){
-  let lastErr=null;
-  for(const model of GEMINI_MODELS){
-    let res;
-    try{
-      res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,{
-        method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
-      });
-    }catch{lastErr=new Error('Network error reaching Gemini');continue;}
-    if(res.ok)return res;
-    if(res.status===404){lastErr=new Error('Gemini models unavailable right now — try again later');continue;}
-    if(res.status===429)throw new Error('Gemini is rate-limited right now — try again in a moment');
-    if(res.status===400||res.status===403)throw new Error('Gemini rejected the request — check your API key in Settings');
-    lastErr=new Error('Gemini request failed ('+res.status+')');
+async function fetchT(url,opts,ms){
+  if(navigator.onLine===false)throw new Error("You're offline. Check your connection and try again.");
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),ms||60000);
+  try{return await fetch(url,Object.assign({},opts,{signal:c.signal}));}
+  catch(e){
+    if(e&&e.name==='AbortError')throw new Error('The request timed out. Slow connection? Try again.');
+    throw new Error('Could not reach Gemini. Check your connection.');
+  }finally{clearTimeout(t);}
+}
+function geminiHttpError(status,body){
+  const b=String(body||'');
+  let m;
+  if(status===400&&/API_KEY_INVALID|API key not valid/i.test(b))m='That API key was rejected. Check it in Settings.';
+  else if(status===400)m='Gemini rejected the request (400).';
+  else if(status===401||status===403)m='This key has no access. Check the key and that the Generative Language API is enabled.';
+  else if(status===429)m=/PerDay/i.test(b)?'Daily Gemini quota used up. Try tomorrow or use another key.':'Gemini is rate-limited right now. Try again in a minute.';
+  else if(status>=500)m='Gemini is having trouble ('+status+'). Try again shortly.';
+  else m='Gemini request failed ('+status+').';
+  const e=new Error(m);e.status=status;return e;
+}
+async function listGeminiModelNames(key){
+  const res=await fetchT('https://generativelanguage.googleapis.com/v1beta/models?key='+encodeURIComponent(key),{},45000);
+  if(!res.ok)throw geminiHttpError(res.status,await res.text().catch(()=>''));
+  const d=await res.json();
+  const bad=/embedding|aqa|tts|imagen|image|vision-only|live|robotics|computer-use|veo|lyria|gemma/i;
+  const score=n=>(/flash/.test(n)?100:0)-(/lite/.test(n)?30:0)-(/preview|exp/.test(n)?10:0)+(parseFloat((n.match(/(\d+(?:\.\d+)?)/)||[0,0])[1])||0);
+  return (d.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace(/^models\//,'')).filter(n=>!bad.test(n)).sort((x,y)=>score(y)-score(x));
+}
+async function geminiRequest(key,body,ms){
+  const tried=new Set();let lastErr=null;
+  const attempt=async model=>{
+    tried.add(model);
+    const res=await fetchT('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+encodeURIComponent(key),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)},ms||75000);
+    if(res.ok){localStorage.setItem('ie_gemini_model',model);res.ieModel=model;return res;}
+    throw geminiHttpError(res.status,await res.text().catch(()=>''));
+  };
+  const retryable=e=>e&&(e.status===404||e.status>=500);
+  for(const m of [localStorage.getItem('ie_gemini_model'),...GEMINI_MODELS].filter(Boolean)){
+    if(tried.has(m))continue;
+    try{return await attempt(m);}catch(e){lastErr=e;if(!retryable(e))throw e;}
   }
-  throw lastErr||new Error('All Gemini models unavailable right now');
+  try{
+    for(const m of (await listGeminiModelNames(key)).slice(0,5)){
+      if(tried.has(m))continue;
+      try{return await attempt(m);}catch(e){lastErr=e;if(!retryable(e))throw e;}
+    }
+  }catch(e){lastErr=lastErr||e;}
+  throw lastErr||new Error('No Gemini model is available for this key.');
+}
+function refreshGeminiStatus(){
+  const el=document.getElementById('gemini-status');if(!el)return;
+  const ok=localStorage.getItem('ie_gemini_ok'),has=localStorage.getItem('ie_gemini_key');
+  el.textContent=ok&&has?'Connected \u00b7 '+ok:has?'Saved, not tested':'Not connected';
 }
 async function testGeminiKey(){
   const key=document.getElementById('gemini-key-inp').value.trim()||localStorage.getItem('ie_gemini_key')||'';
   if(!key){toast('Enter a key first');return;}
-  document.getElementById('gemini-status').textContent='Testing…';
+  const el=document.getElementById('gemini-status');
+  el.textContent='Testing\u2026';
   try{
-    await geminiRequest(key,{contents:[{parts:[{text:'Reply with only the word OK.'}]}]});
-    document.getElementById('gemini-status').textContent='Connected';toast('Gemini key works');
-  }catch(err){document.getElementById('gemini-status').textContent='Failed';toast(err.message||'Key test failed');}
+    const res=await geminiRequest(key,{contents:[{parts:[{text:'Reply with only the word OK.'}]}]},45000);
+    localStorage.setItem('ie_gemini_ok',res.ieModel||'ok');
+    el.textContent='Connected \u00b7 '+(res.ieModel||'ok');toast('Gemini key works');
+  }catch(err){
+    localStorage.removeItem('ie_gemini_ok');
+    el.textContent='Failed';toast(err.message||'Key test failed');
+  }
 }
 function ideaContextText(idea){
   let txt=idea.fields?Object.entries(idea.fields).map(([k,v])=>`${k}: ${v}`).join('\n'):(idea.thought||'');
@@ -1392,6 +1436,33 @@ function buildProjectHistorySummary(){
   if(examples.length)s+=` Examples of goals they've actually finished: ${examples.map(t=>`"${t}"`).join(', ')}.`;
   s+=` Use this to calibrate scope and granularity — lean toward the goal counts and style this person has actually shown they finish, but don't let it override what this specific idea genuinely needs.`;
   return s;
+}
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;});
+window.addEventListener('appinstalled',()=>{deferredInstall=null;toast('Installed');});
+async function installApp(){
+  if(window.matchMedia('(display-mode: standalone)').matches){toast('Already running as an installed app');return;}
+  if(deferredInstall){deferredInstall.prompt();try{await deferredInstall.userChoice;}catch{}deferredInstall=null;return;}
+  toast('Not installable yet. Tap Check to see why.');
+}
+async function checkInstall(){
+  const out=document.getElementById('install-status');out.textContent='Checking\u2026';
+  const bad=[];
+  try{
+    const mr=await fetch(document.querySelector('link[rel=manifest]').href,{cache:'no-store'});
+    if(!mr.ok)bad.push('manifest '+mr.status);
+    else{
+      const m=await mr.json();
+      for(const ic of (m.icons||[])){
+        try{const r=await fetch(new URL(ic.src,mr.url),{cache:'no-store'});if(!r.ok)bad.push(ic.src+' '+r.status);}catch{bad.push(ic.src+' unreachable');}
+      }
+      try{const r=await fetch(new URL(m.start_url,mr.url),{cache:'no-store',redirect:'manual'});if(r.type==='opaqueredirect'||(r.status>=300&&r.status<400))bad.push('start_url redirects');else if(!r.ok)bad.push('start_url '+r.status);}catch{}
+    }
+  }catch{bad.push('manifest unreachable');}
+  const reg=('serviceWorker' in navigator)?await navigator.serviceWorker.getRegistration():null;
+  if(!reg)bad.push('no service worker');
+  if(!/^https:|^http:\/\/localhost/.test(location.href))bad.push('not https');
+  out.textContent=bad.length?'Problem: '+bad.join(', '):(deferredInstall?'Ready to install':'Files OK, but the browser has not offered install. Use Chrome');
 }
 const DEPTHS={light:{s:'2-3',g:'2-3'},standard:{s:'3-5',g:'3-5'},deep:{s:'5-8',g:'4-7'}};
 async function generateStagesWithGemini(idea,key,depth='standard'){
