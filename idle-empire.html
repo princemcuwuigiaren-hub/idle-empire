@@ -367,6 +367,38 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes celPulse{0%{transform:scale(.2);opacity:0;filter:drop-shadow(0 0 0px rgba(224,64,251,0))}40%{transform:scale(1.2);filter:drop-shadow(0 0 30px rgba(224,64,251,1)) drop-shadow(0 0 60px rgba(156,39,176,.8))}70%{transform:scale(.92)}100%{transform:scale(1);opacity:1;filter:drop-shadow(0 0 18px rgba(224,64,251,.85))}}
 @keyframes celText{from{opacity:0;transform:translateY(10px) scale(.96);letter-spacing:10px}to{opacity:1;transform:translateY(0) scale(1);letter-spacing:6px}}
+
+/* v2 calm pass */
+.sec-ttl{color:var(--text-dim)!important}
+.add-btn{color:var(--text-dim)!important}
+.cat-filter-wrap{padding-top:4px!important;padding-bottom:10px!important;margin:0!important}
+.cf-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.cf-pill{color:var(--text-dim)}
+.ic-cat{color:var(--text-dim)!important}
+.ic-sub,.ic-date{color:var(--text-dim)!important}
+.ic-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pd-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.pd-act{font-size:11px;font-weight:600;background:none;border:1px solid var(--border);color:var(--text-muted);padding:4px 12px;border-radius:20px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.5px}
+.dl-chip{font-size:11px;font-weight:600;background:var(--card);border:1px solid var(--border);color:var(--text-dim);padding:4px 11px;border-radius:20px;cursor:pointer;font-family:'Rajdhani',sans-serif;display:inline-flex;gap:6px;align-items:center}
+.pd-next{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 13px;margin-bottom:14px}
+.pd-next-lbl{font-size:10px;letter-spacing:1.5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px}
+.pd-next-txt{font-size:14px;color:var(--text);font-weight:600}
+.pd-origin{margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm)}
+.pd-origin summary{padding:10px 13px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;list-style:none}
+.pd-origin p{padding:0 13px 12px;font-size:13px;color:var(--text-dim);line-height:1.65;white-space:pre-line}
+.stages-path{position:relative;padding-left:22px}
+.stages-path::before{content:'';position:absolute;left:6px;top:10px;bottom:10px;width:2px;background:var(--border)}
+.stages-path .stage-block{position:relative}
+.stages-path .stage-block::before{content:'';position:absolute;left:-22px;top:15px;width:14px;height:14px;border-radius:50%;background:var(--bg);border:2px solid var(--text-muted);box-sizing:border-box}
+.stages-path .stage-block.st-done::before{background:var(--text-dim);border-color:var(--text-dim)}
+.stages-path .stage-block.st-now::before{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.stages-path .stage-block.st-now{border-color:var(--border-hi)}
+.stage-add-goal.primary{align-self:stretch;text-align:center;padding:10px;border-style:solid;border-color:var(--border-hi);color:var(--accent);font-size:12px}
+.del-link{display:block;margin:6px auto 0;background:none;border:none;color:var(--text-muted);font-family:'Rajdhani',sans-serif;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.del-link:active{color:#ef4444}
+.lv-chip{font-family:'Orbitron',monospace;font-size:9px;font-weight:700;letter-spacing:1px;padding:3px 8px;border-radius:20px;border:1px solid var(--border-hi);color:var(--text-dim);flex-shrink:0;white-space:nowrap}
+.lv-chip.lv5{color:var(--gold);border-color:var(--gold)}
+#s-app,#v-home{background:transparent}
 </style>
 </head>
 <body>
@@ -638,6 +670,8 @@ try{
     fbReady=true;
   }
 }catch(e){console.error('Firebase init failed',e);}
+// Vulcan has no engine yet. Flip to true only when its first pass exists.
+const VULCAN_ENABLED=false;
 const RAW_SPARK={fields:['Idea','Why It Excites Me','Possibilities','Notes']};
 const CATS={
   SYSTEM:{label:'SYSTEM',color:'#00dcd2',glow:'rgba(0,220,210,0.32)',orb:{fill:'rgba(0,220,210,0.65)',glow:'rgba(0,220,210,0.28)',stroke:'rgba(80,240,240,0.45)'},subs:{'⚡ Raw Spark':RAW_SPARK,'Web / Mobile App':{fields:['Target User','User Problem','Proposed Solution','Core Features','Competitive Edge','Revenue Model']},'AI System':{fields:['Purpose','Input','Output','Data Sources','Decision Logic','Limitations']},'Automation':{fields:['Current Process','Pain Point','Trigger','Automation Logic','Desired Result','Failure Risks']},'SaaS':{fields:['Customer','Pain Point','Value Proposition','Features','Pricing','Growth Strategy']},'Website':{fields:['Audience','Purpose','Content','Key Pages','Primary Action','Success Metric']},'Game':{fields:['Audience','Core Loop','Progression','Unique Mechanic','Win State','Monetization']}}},
@@ -650,32 +684,78 @@ let curTab='home',curView='home',navStack=[],curUser=null,hbgOpen=false,activePa
 let filterQ='',filterCat='ALL',searchOpen=false;
 let pGoalId=null,pComplete={projId:null,stageId:null,goalId:null},pLogId=null,pProjId=null,pDeadlineProjId=null;
 let writerMode='create',writerCat=null,writerSub=null;
-let cosmosAF=null,lastTap={orb:null,time:0},tipTimer=null;
+let ripples=[],tipOrb=null,cosmosAF=null,lastTap={orb:null,time:0},tipTimer=null;
 let ideas=JSON.parse(localStorage.getItem('ie_ideas')||'[]');
 let projects=JSON.parse(localStorage.getItem('ie_projects')||'[]');
 function migrateProjects(){projects.forEach(p=>{if(!p.stages){p.stages=[{id:uid(),name:'Goals',goals:p.goals||[]}];delete p.goals;}if(p.vulcanLocked===undefined)p.vulcanLocked=false;if(p.vulcanVersion===undefined)p.vulcanVersion=0;if(p.vulcanSummary===undefined)p.vulcanSummary='';if(!p.versionHistory)p.versionHistory=[];});}
+const canon=v=>JSON.stringify(v,(k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,kk)=>(o[kk]=x[kk],o),{}):x);
+let syncReady={ideas:false,projects:false},lastSynced={ideas:new Map(),projects:new Map()},unsubs=[],pushTimer=null,subTok=0;
 const save=()=>{
   localStorage.setItem('ie_ideas',JSON.stringify(ideas));
   localStorage.setItem('ie_projects',JSON.stringify(projects));
-  if(cloudMode&&curUser?.uid){
-    db.collection('users').doc(curUser.uid).set({ideas,projects,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true})
-      .catch(()=>toast('Could not sync to cloud — saved on this device'));
-  }
+  if(cloudMode&&curUser?.uid){clearTimeout(pushTimer);pushTimer=setTimeout(doPush,300);}
 };
+const isDirty=name=>{
+  const arr=name==='ideas'?ideas:projects,last=lastSynced[name];
+  if(arr.length!==last.size)return true;
+  return arr.some(it=>last.get(it.id)!==canon(it));
+};
+async function doPush(){
+  if(!syncReady.ideas||!syncReady.projects||!curUser?.uid)return;
+  const base=db.collection('users').doc(curUser.uid),ops=[];
+  [['ideas',ideas],['projects',projects]].forEach(([name,arr])=>{
+    const last=lastSynced[name],seen=new Set();
+    arr.forEach(it=>{seen.add(it.id);const j=canon(it);if(last.get(it.id)!==j)ops.push({t:'set',name,id:it.id,j,data:JSON.parse(JSON.stringify(it))});});
+    last.forEach((_,id)=>{if(!seen.has(id))ops.push({t:'del',name,id});});
+  });
+  for(let i=0;i<ops.length;i+=400){
+    const chunk=ops.slice(i,i+400),batch=db.batch();
+    chunk.forEach(o=>{const ref=base.collection(o.name).doc(o.id);o.t==='set'?batch.set(ref,o.data):batch.delete(ref);});
+    try{await batch.commit();chunk.forEach(o=>o.t==='set'?lastSynced[o.name].set(o.id,o.j):lastSynced[o.name].delete(o.id));}
+    catch(e){console.error(e);toast('Could not sync to cloud, saved on this device');return;}
+  }
+}
+function applySnap(name,snap){
+  if(syncReady[name]&&isDirty(name))return;
+  const items=snap.docs.map(d=>d.data()).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  lastSynced[name]=new Map(items.map(it=>[it.id,canon(it)]));
+  if(name==='ideas')ideas=items;else{projects=items;migrateProjects();}
+  syncReady[name]=true;
+  localStorage.setItem('ie_ideas',JSON.stringify(ideas));
+  localStorage.setItem('ie_projects',JSON.stringify(projects));
+  refreshCurrentView();
+}
+async function migrateLegacy(base,d){
+  try{
+    const items=[...(d.ideas||[]).map(x=>['ideas',x]),...(d.projects||[]).map(x=>['projects',x])].filter(([n,x])=>x&&x.id);
+    for(let i=0;i<items.length;i+=400){
+      const b=db.batch();
+      items.slice(i,i+400).forEach(([n,x])=>b.set(base.collection(n).doc(x.id),JSON.parse(JSON.stringify(x))));
+      await b.commit();
+    }
+    const FV=firebase.firestore.FieldValue;
+    await base.set({schemaVersion:2,ideas:FV.delete(),projects:FV.delete(),updatedAt:FV.serverTimestamp()},{merge:true});
+    return true;
+  }catch(e){console.error(e);toast('Cloud upgrade needs the new Firestore rules. Your data is safe on this device.');return false;}
+}
 function subscribeUserDoc(uid){
   if(unsubUserDoc)unsubUserDoc();
-  unsubUserDoc=db.collection('users').doc(uid).onSnapshot(doc=>{
-    if(doc.exists){
-      const d=doc.data();ideas=d.ideas||[];projects=d.projects||[];migrateProjects();
-      if(d.photoDataUrl&&curUser){curUser.photoDataUrl=d.photoDataUrl;localStorage.setItem('ie_user',JSON.stringify(curUser));renderAvatar();}
-    }else{
-      db.collection('users').doc(uid).set({ideas:[],projects:[],updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
-      ideas=[];projects=[];
-    }
-    localStorage.setItem('ie_ideas',JSON.stringify(ideas));
-    localStorage.setItem('ie_projects',JSON.stringify(projects));
-    refreshCurrentView();
-  },err=>{console.error(err);toast('Sync error — showing last saved data');});
+  const tok=++subTok;
+  syncReady={ideas:false,projects:false};lastSynced={ideas:new Map(),projects:new Map()};
+  const base=db.collection('users').doc(uid);
+  const errFn=e=>{console.error(e);toast('Sync error, showing last saved data');};
+  let started=false;
+  unsubs.push(base.onSnapshot(async doc=>{
+    const d=doc.exists?doc.data():null;
+    if(d&&d.photoDataUrl&&curUser){curUser.photoDataUrl=d.photoDataUrl;localStorage.setItem('ie_user',JSON.stringify(curUser));renderAvatar();}
+    if(started)return;started=true;
+    if(!d)await base.set({schemaVersion:2,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}).catch(errFn);
+    else if(d.schemaVersion!==2&&!(await migrateLegacy(base,d)))return;
+    if(tok!==subTok)return;
+    unsubs.push(base.collection('ideas').onSnapshot(sn=>applySnap('ideas',sn),errFn));
+    unsubs.push(base.collection('projects').onSnapshot(sn=>applySnap('projects',sn),errFn));
+  },errFn));
+  unsubUserDoc=()=>{unsubs.forEach(f=>{try{f();}catch{}});unsubs=[];};
 }
 function refreshCurrentView(){
   if(curView==='home'){const c=document.getElementById('cosmos');document.getElementById('cosmos-empty').style.display=ideas.length?'none':'flex';if(cosmosAF)buildOrbs(c.width,c.height);}
@@ -881,7 +961,7 @@ function buildOrbs(W,H){
     const cat=CATS[idea.category];
     const col=cat?cat.orb:{fill:'rgba(156,39,176,0.65)',glow:'rgba(156,39,176,0.28)',stroke:'rgba(200,100,230,0.45)'};
     const r=14+Math.random()*13;
-    orbs.push({x:r+Math.random()*(W-r*2),y:r+Math.random()*(H-r*2),vx:(Math.random()-.5)*.8,vy:(Math.random()-.5)*.8,r,col,idea,glow:0,glowing:false,rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*.007});
+    orbs.push({x:r+Math.random()*(W-r*2),y:r+Math.random()*(H-r*2),vx:(Math.random()-.5)*.45,vy:(Math.random()-.5)*.45,r,col,idea,glow:0,glowing:false,rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*.007});
   });
 }
 function drawCrystal(ctx,x,y,r,col,glowAmt,rot){
@@ -893,20 +973,30 @@ function drawCrystal(ctx,x,y,r,col,glowAmt,rot){
     ctx.beginPath();ctx.arc(0,0,r*2.8,0,Math.PI*2);ctx.fillStyle=gr;ctx.fill();
   }
   const pts=[[0,-r],[r*.62,-r*.18],[r*.5,r*.68],[0,r*.92],[-r*.52,r*.63],[-r*.65,-r*.15]];
+  const lite=document.documentElement.getAttribute('data-theme')==='light';
+  const base=lite?'60,60,110':'190,200,235';
   ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);pts.forEach(p=>ctx.lineTo(p[0],p[1]));ctx.closePath();
   const g=ctx.createLinearGradient(-r,-r,r,r);
-  g.addColorStop(0,'rgba(255,255,255,0.3)');
-  g.addColorStop(.35,col.fill);
-  g.addColorStop(1,setAlpha(col.fill,.2));
+  g.addColorStop(0,'rgba('+base+','+(lite?.28:.34)+')');
+  g.addColorStop(1,'rgba('+base+','+(lite?.06:.07)+')');
   ctx.fillStyle=g;ctx.fill();
+  ctx.strokeStyle='rgba('+base+','+(lite?.4:.38)+')';ctx.lineWidth=.8;ctx.stroke();
   ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);ctx.lineTo(pts[1][0],pts[1][1]);ctx.lineTo(pts[0][0]*.15,pts[0][1]*.3);ctx.closePath();
-  ctx.fillStyle='rgba(255,255,255,0.2)';ctx.fill();
-  ctx.strokeStyle=col.stroke;ctx.lineWidth=.7;ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,'+(lite?.25:.12)+')';ctx.fill();
+  ctx.beginPath();ctx.arc(0,r*.08,r*.2,0,Math.PI*2);
+  ctx.fillStyle=col.stroke;ctx.shadowColor=col.stroke;ctx.shadowBlur=r*.5;ctx.fill();ctx.shadowBlur=0;
   ctx.restore();
 }
+function followTip(canvas){
+  if(!tipOrb)return;
+  const tip=document.getElementById('orb-tip'),r=canvas.getBoundingClientRect();
+  const x=Math.max(8,Math.min(r.left+tipOrb.x-tip.offsetWidth/2,window.innerWidth-tip.offsetWidth-8));
+  tip.style.left=x+'px';tip.style.top=Math.max(8,r.top+tipOrb.y-tipOrb.r-42)+'px';
+}
 function runCosmos(canvas){
-  const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;
+  const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;ripples.length=0;
   function tick(){
+    const now=Date.now();
     ctx.clearRect(0,0,W,H);
     orbs.forEach(o=>{
       o.x+=o.vx;o.y+=o.vy;o.rot+=o.rotSpd;
@@ -917,6 +1007,7 @@ function runCosmos(canvas){
         const dx=o2.x-o.x,dy=o2.y-o.y,dist=Math.sqrt(dx*dx+dy*dy),minD=o.r+o2.r;
         if(dist<minD&&dist>0){
           const nx=dx/dist,ny=dy/dist,rel=(o.vx-o2.vx)*nx+(o.vy-o2.vy)*ny;
+          if(rel>.5&&now-(o.hitT||0)>400&&now-(o2.hitT||0)>400){o.hitT=o2.hitT=now;ripples.push({x:(o.x+o2.x)/2,y:(o.y+o2.y)/2,age:0,power:Math.min(1,rel/2.5)});o.glow=Math.max(o.glow,.45);o2.glow=Math.max(o2.glow,.45);}
           if(rel>0){o.vx-=rel*nx;o.vy-=rel*ny;o2.vx+=rel*nx;o2.vy+=rel*ny;}
           const spd=Math.sqrt(o.vx*o.vx+o.vy*o.vy);if(spd>2.8){o.vx=o.vx/spd*2.8;o.vy=o.vy/spd*2.8;}
           const ov=(minD-dist)/2;o.x-=ov*nx;o.y-=ov*ny;o2.x+=ov*nx;o2.y+=ov*ny;
@@ -925,6 +1016,14 @@ function runCosmos(canvas){
       o.glow=o.glowing?Math.min(1,o.glow+.05):Math.max(0,o.glow-.03);
       drawCrystal(ctx,o.x,o.y,o.r,o.col,o.glow,o.rot);
     });
+    const rb=document.documentElement.getAttribute('data-theme')==='light'?'60,60,110':'190,200,235';
+    for(let i=ripples.length-1;i>=0;i--){
+      const q=ripples[i];q.age++;const t=q.age/40;
+      if(t>=1){ripples.splice(i,1);continue;}
+      ctx.beginPath();ctx.arc(q.x,q.y,8+t*34*(.6+q.power*.4),0,Math.PI*2);
+      ctx.strokeStyle='rgba('+rb+','+((.06+.3*q.power)*(1-t))+')';ctx.lineWidth=1;ctx.stroke();
+    }
+    followTip(canvas);
     cosmosAF=requestAnimationFrame(tick);
   }
   tick();
@@ -941,7 +1040,7 @@ function handleCosmosClick(e){
   const dbl=lastTap.orb===hit&&now-lastTap.time<320;
   lastTap={orb:hit,time:now};
   if(dbl&&hit.idea){
-    document.getElementById('orb-tip').classList.remove('show');
+    document.getElementById('orb-tip').classList.remove('show');tipOrb=null;
     switchTab('ideas');setTimeout(()=>openWriter('refine',hit.idea.id),350);return;
   }
   const dx2=hit.x-cx,dy2=hit.y-cy,len=Math.sqrt(dx2*dx2+dy2*dy2)||1;
@@ -949,8 +1048,8 @@ function handleCosmosClick(e){
   const spd=Math.sqrt(hit.vx*hit.vx+hit.vy*hit.vy);if(spd>4.5){hit.vx=hit.vx/spd*4.5;hit.vy=hit.vy/spd*4.5;}
   if(hit.idea?.title){
     const tip=document.getElementById('orb-tip');tip.textContent=hit.idea.title;
-    tip.style.left=Math.min(e.clientX-20,window.innerWidth-180)+'px';tip.style.top=(e.clientY-46)+'px';
-    tip.classList.add('show');clearTimeout(tipTimer);tipTimer=setTimeout(()=>tip.classList.remove('show'),2200);
+    tipOrb=hit;followTip(canvas);
+    tip.classList.add('show');clearTimeout(tipTimer);tipTimer=setTimeout(()=>{tip.classList.remove('show');tipOrb=null;},2200);
   }
   hit.glowing=true;setTimeout(()=>{hit.glowing=false;},700);
 }
@@ -1166,8 +1265,9 @@ function saveWriter(){
 function renderCatFilterBar(){
   const bar=document.getElementById('cat-filter-bar');
   const allOn=filterCat==='ALL';
-  bar.innerHTML=`<button class="cf-pill" style="${allOn?'background:var(--accent2);border-color:transparent;color:#fff;':'border-color:var(--border);'}" onclick="setCatFilter('ALL')">ALL</button>`+
-    Object.entries(CATS).map(([key,cat])=>{const on=filterCat===key;return `<button class="cf-pill" style="color:${cat.color};${on?`background:${cat.color};border-color:transparent;color:#fff;`:`border-color:${setAlpha(cat.glow,.5)};`}" onclick="setCatFilter('${key}')">${cat.label}</button>`;}).join('');
+  const on0=(k)=>filterCat===k?'background:var(--accent2);border-color:transparent;color:#fff;':'';
+  bar.innerHTML=`<button class="cf-pill" style="${on0('ALL')}" onclick="setCatFilter('ALL')">ALL</button>`+
+    Object.entries(CATS).map(([key,cat])=>`<button class="cf-pill" style="${on0(key)}" onclick="setCatFilter('${key}')"><i class="cf-dot" style="background:${filterCat===key?'#fff':cat.color}"></i>${cat.label}</button>`).join('');
 }
 function setCatFilter(cat){filterCat=cat;renderIdeas();}
 
@@ -1180,12 +1280,12 @@ function renderIdeas(){
   empty.style.display='none';
   list.innerHTML=[...data].reverse().map(i=>{
     const cat=CATS[i.category];const col=cat?cat.color:'var(--accent)';
-    return `<div class="idea-card" onclick="openWriter('refine','${i.id}')" style="border-left:2px solid ${col}">
+    return `<div class="idea-card" onclick="openWriter('refine','${i.id}')">
       <div class="ic-body">
         <div class="ic-title">${esc(i.title||'Untitled')}</div>
         <div class="ic-meta">
-          ${cat?`<span class="ic-cat" style="color:${col}">${cat.label}</span><span style="color:var(--text-muted);font-size:10px">·</span><span class="ic-sub">${esc(i.subCategory||'')}</span>`:'<span class="ic-sub" style="color:var(--text-muted)">Uncategorized</span>'}
-          <span style="color:var(--text-muted);font-size:10px;margin-left:2px">· ${fmtDate(i.createdAt)}</span>
+          ${cat?`<span class="ic-dot" style="background:${col}"></span><span class="ic-cat">${cat.label}</span><span style="color:var(--text-muted);font-size:10px">·</span><span class="ic-sub">${esc(i.subCategory||'')}</span>`:'<span class="ic-sub" style="color:var(--text-muted)">Uncategorized</span>'}
+          <span style="color:var(--text-dim);font-size:10px;margin-left:2px">· ${fmtDate(i.createdAt)}</span>
         </div>
       </div>
       <button class="ic-dots" onclick="event.stopPropagation();openIdeaMenu('${i.id}')" aria-label="Options">
@@ -1206,7 +1306,7 @@ function openIdeaMenu(id){
   document.getElementById('sh-opts').innerHTML=`
     <button class="sh-opt" onclick="closeSheet();setTimeout(()=>openWriter('refine','${id}'),280)"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M12 2l3 3L5 15H2v-3L12 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Edit Idea</button>
     <button class="sh-opt" onclick="moveToProject('${id}')"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M8.5 2L14 8.5H11V15H6V8.5H3L8.5 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Move to Projects</button>
-    <button class="sh-opt" onclick="moveToProjectAI('${id}')"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="8.5" cy="8.5" r="6.5" stroke="currentColor" stroke-width="1.3"/></svg>Let Morpheus Build This<span class="ai-tag">AI</span></button>
+    <button class="sh-opt" onclick="pickDepth('${id}')"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="8.5" cy="8.5" r="6.5" stroke="currentColor" stroke-width="1.3"/></svg>Let Morpheus Build This<span class="ai-tag">AI</span></button>
     <button class="sh-opt danger" onclick="delIdea('${id}')"><svg width="17" height="17" viewBox="0 0 17 17" fill="none"><path d="M2 4h13M6 4V3a1 1 0 011-1h3a1 1 0 011 1v1M6.5 7v6M10.5 7v6M2.5 4l1 10a1 1 0 001 1h8a1 1 0 001-1l1-10" stroke="#ef4444" stroke-width="1.4" stroke-linecap="round"/></svg>Delete Idea</button>`;
   openSheet();
 }
@@ -1293,11 +1393,13 @@ function buildProjectHistorySummary(){
   s+=` Use this to calibrate scope and granularity — lean toward the goal counts and style this person has actually shown they finish, but don't let it override what this specific idea genuinely needs.`;
   return s;
 }
-async function generateStagesWithGemini(idea,key){
+const DEPTHS={light:{s:'2-3',g:'2-3'},standard:{s:'3-5',g:'3-5'},deep:{s:'5-8',g:'4-7'}};
+async function generateStagesWithGemini(idea,key,depth='standard'){
   const cat=CATS[idea.category];const catLabel=cat?cat.label:(idea.category||'General');const sub=idea.subCategory||'';
   const fieldsTxt=ideaContextText(idea);
   const history=buildProjectHistorySummary();
-  const prompt=`You are Morpheus, an AI that turns raw ideas into structured, buildable projects.
+  const d=DEPTHS[depth]||DEPTHS.standard;
+  const prompt=`You are Morpheus, an AI that turns ideas into structured, buildable projects.
 
 Idea title: ${idea.title}
 Domain: ${catLabel}
@@ -1307,31 +1409,44 @@ ${fieldsTxt}
 Your project history with this person:
 ${history}
 
-Break this idea into the logical STAGES it will take to go from concept to finished reality (for example: Research, Design, Build, Test, Launch — but adapt the actual stage names to whatever genuinely fits this specific idea, not a generic template). Decide how many stages this idea needs and how many concrete goals belong inside each stage, based on its real scope — a small idea may only need 2-3 stages with a couple goals each, an ambitious one may need many stages with several goals each. Do not pad with filler and do not artificially cap either count. Order both the stages and the goals within each stage logically from first to last. Each goal must be a single, concrete, completable milestone written in plain, active language (e.g. "Design the core UI wireframes").
+Plan this project in ${d.s} stages with ${d.g} goals per stage.
 
-Return ONLY a JSON array of objects, each with a "name" (the stage name) and a "goals" array of goal strings. Nothing else.`;
-  const res=await geminiRequest(key,{contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json',responseSchema:{type:'ARRAY',items:{type:'OBJECT',properties:{name:{type:'STRING'},goals:{type:'ARRAY',items:{type:'STRING'}}},required:['name','goals']}}}});
+Rules:
+- Stages are in true dependency order and are named for what each one achieves, adapted to this idea, never a generic template.
+- Every goal is one concrete action with a checkable result: someone could point at the outcome and say it is done. No vague goals like "plan the app" or "do research".
+- Use the exact terms, names and features from the idea. Do not invent facts, users, tools or numbers the idea does not mention.
+- Respect any Constraints given. If a Next Step is given, the first goal of the first stage should be that step or lead directly to it.
+- If a Desired Outcome is given, the final stage must end with it existing for real.
+- Rate each goal's difficulty: 1 = under an hour, 2 = a few sessions, 3 = demanding or needs new skills.
+
+Return ONLY a JSON array of stages. Each stage has "name" and "goals", and each goal has "text" and "difficulty".`;
+  const res=await geminiRequest(key,{contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.35,responseMimeType:'application/json',responseSchema:{type:'ARRAY',items:{type:'OBJECT',properties:{name:{type:'STRING'},goals:{type:'ARRAY',items:{type:'OBJECT',properties:{text:{type:'STRING'},difficulty:{type:'INTEGER'}},required:['text','difficulty']}}},required:['name','goals']}}}});
   const data=await res.json();
   const txt=data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if(!txt)throw new Error('Morpheus returned nothing usable');
   let stages;
   try{stages=JSON.parse(txt);}catch{throw new Error('Could not parse Morpheus\u2019 response');}
   if(!Array.isArray(stages)||!stages.length)throw new Error('Morpheus returned no stages');
-  const clean=stages.map(s=>({name:String(s?.name||'Stage').trim()||'Stage',goals:(Array.isArray(s?.goals)?s.goals:[]).map(g=>String(g).trim()).filter(Boolean)})).filter(s=>s.goals.length);
+  const clean=stages.map(s=>({name:String(s?.name||'Stage').trim()||'Stage',goals:(Array.isArray(s?.goals)?s.goals:[]).map(g=>({text:String(g?.text||'').trim(),diff:Math.min(3,Math.max(1,Math.round(+g?.difficulty)||2))})).filter(g=>g.text)})).filter(s=>s.goals.length);
   if(!clean.length)throw new Error('Morpheus returned no usable stages');
   return clean;
 }
-async function moveToProjectAI(id){
+function pickDepth(id){
+  document.getElementById('sh-ttl').textContent='How deep should Morpheus go?';
+  const o=(d,t,sub)=>`<button class="sh-opt" onclick="moveToProjectAI('${id}','${d}')"><span>${t}<br><span style="font-size:11px;color:var(--text-muted)">${sub}</span></span></button>`;
+  document.getElementById('sh-opts').innerHTML=o('light','Light','2-3 stages, 2-3 goals each')+o('standard','Standard','3-5 stages, 3-5 goals each')+o('deep','Deep','5-8 stages, 4-7 goals each');
+}
+async function moveToProjectAI(id,depth='standard'){
   closeSheet();
   const key=localStorage.getItem('ie_gemini_key')||'';
   if(!key){toast('Add your Gemini API key in Settings first');return;}
   const idea=ideas.find(i=>i.id===id);if(!idea)return;
   showAiLoading(true);
   try{
-    const stagesData=await generateStagesWithGemini(idea,key);
+    const stagesData=await generateStagesWithGemini(idea,key,depth);
     const desc=ideaContextText(idea);
     const proj={id:uid(),name:idea.title||'Untitled',description:desc,status:'idea',sourceIdeaId:id,
-      stages:stagesData.map(s=>({id:uid(),name:s.name,goals:s.goals.map(t=>({id:uid(),text:t,completed:false,completionNote:'',completedAt:null,proof:null}))})),
+      stages:stagesData.map(s=>({id:uid(),name:s.name,goals:s.goals.map(g=>({id:uid(),text:g.text,diff:g.diff,completed:false,completionNote:'',completedAt:null,proof:null}))})),
       progressLogs:[],deadline:null,vulcanLocked:false,vulcanVersion:0,vulcanSummary:'',versionHistory:[],createdAt:Date.now(),updatedAt:Date.now()};
     projects.push(proj);const idx=ideas.findIndex(i=>i.id===id);if(idx!==-1)ideas[idx].projectId=proj.id;
     calcStatus(proj);save();
@@ -1368,6 +1483,17 @@ function deadlineLabel(dl){
   return{txt:days+'d left',cls:'ok'};
 }
 
+const GOAL_PTS={1:8,2:20,3:40};
+function projLevel(p){
+  const stages=p.stages||[],goals=stages.flatMap(s=>s.goals||[]);
+  if(!goals.length)return null;
+  const pts=g=>GOAL_PTS[g.diff]||GOAL_PTS[2];
+  const max=goals.reduce((a,g)=>a+pts(g),0)+stages.length*10;
+  const xp=goals.filter(g=>g.completed).reduce((a,g)=>a+pts(g),0);
+  const lv=max<80?1:max<200?2:max<400?3:max<700?4:5;
+  return {lv,xp,max};
+}
+const lvChip=p=>{const L=projLevel(p);return L?`<span class="lv-chip lv${L.lv}">LV ${L.lv}</span>`:'';};
 function renderProjects(){
   const list=document.getElementById('proj-list');const empty=document.getElementById('proj-empty');
   if(!projects.length){list.innerHTML='';empty.style.display='flex';return;}
@@ -1380,7 +1506,7 @@ function renderProjects(){
     const forged=!!p.vulcanLocked;
     return `<div class="proj-card${forged?' forged':''}" onclick="openProj('${p.id}')">
       ${forged?`<div class="forged-badge">⚒ Vulcan Forged · v${p.vulcanVersion}</div>`:''}
-      <div class="pc-head"><div class="pc-name">${esc(p.name)}</div><span class="badge b-${p.status}">${p.status}</span></div>
+      <div class="pc-head"><div class="pc-name">${esc(p.name)}</div><span style="display:flex;gap:6px;align-items:center"><span class="badge b-${p.status}">${p.status}</span>${lvChip(p)}</span></div>
       ${forged&&p.vulcanSummary?`<div class="pc-desc">${esc(p.vulcanSummary)}</div>`:p.description?`<div class="pc-desc">${esc(p.description.split('\n')[0])}</div>`:''}
       ${!forged&&lastLog?`<div class="pc-log">🗒 ${esc(lastLog.text.length>70?lastLog.text.slice(0,70)+'…':lastLog.text)}</div>`:''}
       <div class="pc-foot"><div style="display:flex;align-items:center;gap:6px;flex:1"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div><span>${done}/${total} goals</span></div>${dl?`<span class="pc-deadline ${dl.cls}">${dl.txt}</span>`:''}</div>
@@ -1415,30 +1541,24 @@ function renderProjDetail(){
   const forged=!!p.vulcanLocked;
   document.getElementById('pd-content').classList.toggle('forged',forged);
   document.getElementById('pd-content').innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <span class="badge b-${p.status}">${p.status}</span>
-      <div style="display:flex;gap:6px">
-        ${!forged?`<button onclick="forgeWithVulcanTest('${p.id}')" style="font-size:11px;font-weight:600;color:var(--fire);background:none;border:1px solid var(--fire-border);padding:4px 12px;border-radius:20px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.5px">⚒ Forge with Vulcan</button>`:''}
-        <button onclick="togglePause('${p.id}')" style="font-size:11px;font-weight:600;color:var(--text-muted);background:none;border:1px solid var(--border);padding:4px 12px;border-radius:20px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.5px">${p.status==='paused'?'Resume':'Pause'}</button>
-      </div>
+    <div class="pd-top">
+      <span class="badge b-${p.status}">${({idea:'Idea',building:'Active',complete:'Shipped',paused:'Paused'})[p.status]||p.status}</span>${lvChip(p)}
+      <button class="dl-chip" onclick="openDeadlineModal('${p.id}')">${dl?`<span class="countdown-txt ${dl.cls}">${dl.txt}</span><span onclick="event.stopPropagation();clearDeadline('${p.id}')" style="opacity:.6">\u2715</span>`:'+ Deadline'}</button>
+      <span style="flex:1"></span>
+      ${VULCAN_ENABLED&&!forged&&p.status!=='complete'?`<button class="pd-act" style="color:var(--fire);border-color:var(--fire-border)" onclick="forgeWithVulcanTest('${p.id}')">\u2692 Forge with Vulcan</button>`:''}
+      ${(p.status==='building'||p.status==='paused')?`<button class="pd-act" onclick="togglePause('${p.id}')">${p.status==='paused'?'Resume':'Pause'}</button>`:''}
     </div>
+    ${total?`<div class="pd-next"><div class="prog-bar" style="height:4px;margin-bottom:10px"><div class="prog-fill" style="width:${pct}%"></div></div><div class="pd-next-lbl">${pct}% \u00b7 ${done}/${total} goals${(()=>{const L=projLevel(p);return L?' \u00b7 '+L.xp+'/'+L.max+' XP':'';})()}</div>${(()=>{const n=allGoals.find(g=>!g.completed);return n?`<div class="pd-next-txt">Next: ${esc(n.text||n.title||n.name||'')}</div>`:'<div class="pd-next-txt">All goals complete</div>';})()}</div>`:''}
     ${forged?`<div class="pd-forged-banner"><div><div class="fb-lbl">⚒ Vulcan Forged — v${p.vulcanVersion}</div>${p.vulcanSummary?`<div class="fb-ver" style="margin-top:3px">${esc(p.vulcanSummary)}</div>`:''}</div><div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">${p.versionHistory.length?`<button onclick="viewVersionHistory('${p.id}')" style="font-size:10px;color:var(--text-dim);background:none;border:1px solid var(--border);padding:3px 9px;border-radius:14px;cursor:pointer">View Previous</button>`:''}<button onclick="releaseFromVulcanTest('${p.id}')" style="font-size:10px;color:var(--text-muted);background:none;border:none;cursor:pointer;text-decoration:underline">Release (test)</button></div></div>`:''}
-    ${p.description?`<p style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;padding:11px 13px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);white-space:pre-line">${esc(p.description)}</p>`:''}
-    <div>
-      <div class="sec-head"><div class="sec-ttl">Deadline</div></div>
-      <div class="deadline-box">
-        <div class="deadline-row">${dl?`<span class="countdown-txt ${dl.cls}">${dl.txt}</span><button class="dl-clear-btn" onclick="clearDeadline('${p.id}')">Remove</button>`:`<span style="font-size:12px;color:var(--text-muted)">No deadline set</span><button class="dl-set-btn" onclick="openDeadlineModal('${p.id}')">Set Deadline</button>`}</div>
-        ${p.deadline&&dl?`<div style="font-size:10px;color:var(--text-muted);margin-top:6px">${new Date(p.deadline).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</div>`:''}
-      </div>
-    </div>
+    ${p.description?`<details class="pd-origin"><summary>Origin</summary><p>${esc(p.description)}</p></details>`:''}
     <div>
       <div class="sec-head"><div class="sec-ttl">Stages</div><button class="add-btn" onclick="openStageModal('${p.id}')"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Stage</button></div>
-      ${total>0?`<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">${done}/${total} goals complete overall · ${pct}%</div><div class="prog-bar" style="height:4px;margin-bottom:14px"><div class="prog-fill" style="width:${pct}%"></div></div>`:''}
-      <div style="display:flex;flex-direction:column;gap:10px">
-        ${p.stages.length?p.stages.map(st=>{
+      <div class="stages-path" style="display:flex;flex-direction:column;gap:10px">
+        ${p.stages.length?(()=>{const nowI=p.stages.findIndex(x=>!x.goals.length||x.goals.some(g=>!g.completed));return p.stages.map((st,si)=>{
           const stTotal=st.goals.length,stDone=st.goals.filter(g=>g.completed).length,stPct=stTotal?Math.round(stDone/stTotal*100):0;
           const collapsed=!!collapsedStages[st.id];
-          return `<div class="stage-block">
+          const stCls=(stTotal>0&&stDone===stTotal)?' st-done':(si===nowI?' st-now':'');
+          return `<div class="stage-block${stCls}">
             <div class="stage-head" onclick="toggleStageCollapse('${st.id}')">
               <svg class="stage-arrow${collapsed?'':' open'}" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
               <span class="stage-name">${esc(st.name)}</span>
@@ -1447,10 +1567,10 @@ function renderProjDetail(){
             <div class="stage-progbar"><div class="stage-progfill" style="width:${stPct}%"></div></div>
             <div class="stage-body" style="display:${collapsed?'none':'block'}">
               ${st.goals.length?st.goals.map(g=>goalItemHtml(p.id,st.id,g)).join(''):'<div class="stage-empty">No goals yet.</div>'}
-              <button class="stage-add-goal" onclick="openGoalModal('${p.id}','${st.id}')">+ Add Goal</button>
+              <button class="stage-add-goal${st.goals.length?'':' primary'}" onclick="openGoalModal('${p.id}','${st.id}')">+ Add Goal</button>
             </div>
           </div>`;
-        }).join(''):'<div style="font-size:12px;color:var(--text-muted);padding:10px 0;text-align:center">No stages yet.</div>'}
+        }).join('');})():'<div style="font-size:12px;color:var(--text-muted);padding:10px 0;text-align:center">No stages yet.</div>'}
       </div>
     </div>
     <div>
@@ -1459,7 +1579,7 @@ function renderProjDetail(){
         ${p.progressLogs.length?[...p.progressLogs].reverse().map(l=>`<div class="log-entry"><div class="log-txt">${esc(l.text)}</div><div class="log-date">${fmtDate(l.createdAt)}</div></div>`).join(''):'<div style="font-size:12px;color:var(--text-muted);padding:10px 0;text-align:center">No logs yet.</div>'}
       </div>
     </div>
-    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">${forged?`<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">🔒 Locked by Vulcan — release it from Vulcan first to delete this project.</div>`:`<button class="danger-btn" onclick="delProj('${p.id}')">Delete Project</button>`}</div>
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">${forged?`<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:8px">🔒 Locked by Vulcan — release it from Vulcan first to delete this project.</div>`:`<button class="del-link" onclick="delProj('${p.id}')">Delete project</button>`}</div>
     <div style="height:20px"></div>`;
 }
 
@@ -1639,6 +1759,7 @@ function confirmDeleteAccount(){document.getElementById('del-ttl').textContent='
     try{
       const proofsSnap=await db.collection('users').doc(curUser.uid).collection('proofs').get();
       await Promise.all(proofsSnap.docs.map(d=>d.ref.delete().catch(()=>{})));
+      for(const n of ['ideas','projects']){const sn=await db.collection('users').doc(curUser.uid).collection(n).get();await Promise.all(sn.docs.map(d=>d.ref.delete()));}
       await db.collection('users').doc(curUser.uid).delete();
       await auth.currentUser.delete();
     }catch(e){toast('Could not fully delete cloud data: '+e.message);}
